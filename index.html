@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapa con OpenStreetMap y Elevation API</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+    <style>
+        #map {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+    <script>
+        var map = L.map('map').setView([10.4223, -63.2977], 10);
+
+        var osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Define las API keys como variables
+        var thunderforestAPIKey = '${{ secrets.THUNDERFOREST_API_KEY }}';
+
+        // Google Maps Satellite layer
+        var googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: '© Google Maps'
+        });
+
+        var osmHumanitarian = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'
+        });
+
+        var openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        });
+
+        var esriSatellite = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© ESRI, © OpenStreetMap contributors'
+        });
+
+        var thunderforestTransport = L.tileLayer(`https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestCycle = L.tileLayer(`https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestLandscape = L.tileLayer(`https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestOutdoors = L.tileLayer(`https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestTransportDark = L.tileLayer(`https://tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestSpinalMap = L.tileLayer(`https://tile.thunderforest.com/spinal-map/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestPioneer = L.tileLayer(`https://tile.thunderforest.com/pioneer/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestMobileAtlas = L.tileLayer(`https://tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestNeighbourhood = L.tileLayer(`https://tile.thunderforest.com/neighbourhood/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        var thunderforestAtlas = L.tileLayer(`https://tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=${thunderforestAPIKey}`, {
+            attribution: '© Thunderforest, © OpenStreetMap contributors'
+        });
+
+        // Añadir la capa OSM por defecto
+        osmStandard.addTo(map);
+
+        // Control de capas
+        var baseMaps = {
+            "OSM Standard": osmStandard,
+            "Google Maps Satellite": googleSatellite,
+            "OSM Humanitarian": osmHumanitarian,
+            "OpenTopoMap": openTopoMap,
+            "ESRI Satellite": esriSatellite,
+            "Thunderforest Transport": thunderforestTransport,
+            "Thunderforest Cycle": thunderforestCycle,
+            "Thunderforest Landscape": thunderforestLandscape,
+            "Thunderforest Outdoors": thunderforestOutdoors,
+            "Thunderforest Transport Dark": thunderforestTransportDark,
+            "Thunderforest Spinal Map": thunderforestSpinalMap,
+            "Thunderforest Pioneer": thunderforestPioneer,
+            "Thunderforest Mobile Atlas": thunderforestMobileAtlas,
+            "Thunderforest Neighbourhood": thunderforestNeighbourhood,
+            "Thunderforest Atlas": thunderforestAtlas
+        };
+
+        L.control.layers(baseMaps).addTo(map);
+
+        // Función para obtener la elevación usando OpenElevation API
+        async function getElevation(lat, lon) {
+            const response = await fetch(`https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`);
+            const data = await response.json();
+            return data.results[0].elevation;
+        }
+
+        // Manejar clics en el mapa para obtener la elevación
+        map.on('click', async function(e) {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+            const elevation = await getElevation(lat, lon);
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent(`Elevación: ${elevation} metros`)
+                .openOn(map);
+        });
+
+        // Agregar el plugin Leaflet.draw para dibujar y editar elementos en el mapa
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems
+            }
+        });
+        map.addControl(drawControl);
+
+        map.on('draw:created', function (e) {
+            var type = e.layerType,
+                layer = e.layer;
+
+            if (type === 'marker') {
+                layer.bindPopup('A new marker!');
+            }
+
+            drawnItems.addLayer(layer);
+        });
+
+        // Ruta al archivo GeoJSON
+        var geojsonUrl = 'aeb.geojson'; // Reemplaza con la ruta correcta a tu archivo GeoJSON
+
+        // Cargar y añadir el archivo GeoJSON
+        fetch(geojsonUrl)
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data).addTo(map);
+            })
+            .catch(error => console.error('Error loading the GeoJSON file:', error));
+    </script>
+</body>
+</html>

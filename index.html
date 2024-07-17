@@ -25,7 +25,7 @@
         }).addTo(map);
 
         // Define las API keys como variables
-        var thunderforestAPIKey = '${{ secrets.THUNDERFOREST_API_KEY }}';
+        var thunderforestAPIKey = '{{ secrets.THUNDERFOREST_API_KEY }}';
 
         // Google Maps Satellite layer
         var googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {

@@ -10,10 +10,25 @@
         #map {
             height: 100vh;
         }
+        .leaflet-top.leaflet-right {
+            top: 80px; /* Para evitar superposición con el control de capas */
+        }
+        #toggle-gps {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
+    <button id="toggle-gps">Toggle GPS</button>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
@@ -158,6 +173,40 @@
                 L.geoJSON(data).addTo(map);
             })
             .catch(error => console.error('Error loading the GeoJSON file:', error));
+
+        // Integración GPS
+        var gpsActive = false;
+        var defaultView = [10.4223, -63.2977];
+        var defaultZoom = 10;
+
+        function toggleGPS() {
+            if (!gpsActive) {
+                map.locate({setView: true, maxZoom: 16});
+                gpsActive = true;
+            } else {
+                map.stopLocate();
+                map.setView(defaultView, defaultZoom);
+                gpsActive = false;
+            }
+        }
+
+        function onLocationFound(e) {
+            var radius = e.accuracy / 2;
+
+            L.marker(e.latlng).addTo(map)
+                .bindPopup("You are within " + radius + " meters from this point").openPopup();
+
+            L.circle(e.latlng, radius).addTo(map);
+        }
+
+        function onLocationError(e) {
+            alert(e.message);
+        }
+
+        map.on('locationfound', onLocationFound);
+        map.on('locationerror', onLocationError);
+
+        document.getElementById('toggle-gps').addEventListener('click', toggleGPS);
     </script>
 </body>
 </html>
